@@ -1,0 +1,45 @@
+From 9ebfd2f6cfa8e79c92e58fd169f90cc768fb865a Mon Sep 17 00:00:00 2001
+From: Andrew Jones <drjones@redhat.com>
+Date: Tue, 21 Jan 2014 10:46:52 +0100
+Subject: globally limit the maximum number of CPUs
+
+We now globally limit the number of VCPUs.
+Especially, there is no way one can specify more than
+max_cpus VCPUs for a VM.
+
+This allows us the restore the ppc max_cpus limitation to the upstream
+default and minimize the ppc hack in kvm-all.c.
+
+Signed-off-by: David Hildenbrand <david@redhat.com>
+Signed-off-by: Miroslav Rezanina <mrezanin@redhat.com>
+Signed-off-by: Danilo Cesar Lemes de Paula <ddepaula@redhat.com>
+---
+ accel/kvm/kvm-all.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/accel/kvm/kvm-all.c b/accel/kvm/kvm-all.c
+index 5f1377ca04..fdf0e4d429 100644
+--- a/accel/kvm/kvm-all.c
++++ b/accel/kvm/kvm-all.c
+@@ -2430,6 +2430,18 @@ static int kvm_init(MachineState *ms)
+     soft_vcpus_limit = kvm_recommended_vcpus(s);
+     hard_vcpus_limit = kvm_max_vcpus(s);
+ 
++#ifdef HOST_PPC64
++    /*
++     * On POWER, the kernel advertises a soft limit based on the
++     * number of CPU threads on the host.  We want to allow exceeding
++     * this for testing purposes, so we don't want to set hard limit
++     * to soft limit as on x86.
++     */
++#else
++    /* RHEL doesn't support nr_vcpus > soft_vcpus_limit */
++    hard_vcpus_limit = soft_vcpus_limit;
++#endif
++
+     while (nc->name) {
+         if (nc->num > soft_vcpus_limit) {
+             warn_report("Number of %s cpus requested (%d) exceeds "
+-- 
+2.31.1
+

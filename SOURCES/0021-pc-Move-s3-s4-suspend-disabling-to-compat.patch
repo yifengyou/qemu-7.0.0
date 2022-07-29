@@ -1,0 +1,70 @@
+From 38b89dc24551258b630f09d1c654b6c72b265c79 Mon Sep 17 00:00:00 2001
+From: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+Date: Thu, 14 Apr 2022 14:58:43 +0100
+Subject: pc: Move s3/s4 suspend disabling to compat
+
+RH-Author: Dr. David Alan Gilbert <dgilbert@redhat.com>
+RH-MergeRequest: 155: 7.0 machine type fixes (x86)
+RH-Commit: [26/26] 7d666032d5f5dab1444ebba085f92f2de4e86699
+RH-Bugzilla: 2064771
+
+Our downstream patches currently have tweaks in the C code to disable
+s3/s4; Thomas pointed out we can just set the property.
+
+Signed-off-by: Dr. David Alan Gilbert <dgilbert@redhat.com>
+---
+ hw/acpi/ich9.c  | 4 ++--
+ hw/acpi/piix4.c | 4 ++--
+ hw/i386/pc.c    | 6 ++++++
+ 3 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/hw/acpi/ich9.c b/hw/acpi/ich9.c
+index de1e401cdf..bd9bbade70 100644
+--- a/hw/acpi/ich9.c
++++ b/hw/acpi/ich9.c
+@@ -435,8 +435,8 @@ void ich9_pm_add_properties(Object *obj, ICH9LPCPMRegs *pm)
+     static const uint32_t gpe0_len = ICH9_PMIO_GPE0_LEN;
+     pm->acpi_memory_hotplug.is_enabled = true;
+     pm->cpu_hotplug_legacy = true;
+-    pm->disable_s3 = 1;
+-    pm->disable_s4 = 1;
++    pm->disable_s3 = 0;
++    pm->disable_s4 = 0;
+     pm->s4_val = 2;
+     pm->use_acpi_hotplug_bridge = true;
+     pm->keep_pci_slot_hpc = true;
+diff --git a/hw/acpi/piix4.c b/hw/acpi/piix4.c
+index 28544e78c3..2fb2b43248 100644
+--- a/hw/acpi/piix4.c
++++ b/hw/acpi/piix4.c
+@@ -653,8 +653,8 @@ static void piix4_send_gpe(AcpiDeviceIf *adev, AcpiEventStatusBits ev)
+ 
+ static Property piix4_pm_properties[] = {
+     DEFINE_PROP_UINT32("smb_io_base", PIIX4PMState, smb_io_base, 0),
+-    DEFINE_PROP_UINT8(ACPI_PM_PROP_S3_DISABLED, PIIX4PMState, disable_s3, 1),
+-    DEFINE_PROP_UINT8(ACPI_PM_PROP_S4_DISABLED, PIIX4PMState, disable_s4, 1),
++    DEFINE_PROP_UINT8(ACPI_PM_PROP_S3_DISABLED, PIIX4PMState, disable_s3, 0),
++    DEFINE_PROP_UINT8(ACPI_PM_PROP_S4_DISABLED, PIIX4PMState, disable_s4, 0),
+     DEFINE_PROP_UINT8(ACPI_PM_PROP_S4_VAL, PIIX4PMState, s4_val, 2),
+     DEFINE_PROP_BOOL(ACPI_PM_PROP_ACPI_PCIHP_BRIDGE, PIIX4PMState,
+                      use_acpi_hotplug_bridge, true),
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index 0886cfe3fe..f98f842f80 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -380,6 +380,12 @@ const size_t pc_compat_1_4_len = G_N_ELEMENTS(pc_compat_1_4);
+  * machine type.
+  */
+ GlobalProperty pc_rhel_compat[] = {
++    /* we don't support s3/s4 suspend */
++    { "PIIX4_PM", "disable_s3", "1" },
++    { "PIIX4_PM", "disable_s4", "1" },
++    { "ICH9-LPC", "disable_s3", "1" },
++    { "ICH9-LPC", "disable_s4", "1" },
++
+     { TYPE_X86_CPU, "host-phys-bits", "on" },
+     { TYPE_X86_CPU, "host-phys-bits-limit", "48" },
+     { TYPE_X86_CPU, "vmx-entry-load-perf-global-ctrl", "off" },
+-- 
+2.31.1
+

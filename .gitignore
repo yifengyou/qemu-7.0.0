@@ -1,3 +1,5 @@
+.idea
+.vscode
 # Prerequisites
 *.d
 
@@ -50,3 +52,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+SRPMS/*
+RPMS/*
+BUILDROOT/*

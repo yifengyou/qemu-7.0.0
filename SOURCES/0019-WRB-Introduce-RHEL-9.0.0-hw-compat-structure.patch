@@ -1,0 +1,135 @@
+From 1d6439527aa6ccabb58208c94417778ccc19de39 Mon Sep 17 00:00:00 2001
+From: Miroslav Rezanina <mrezanin@redhat.com>
+Date: Wed, 9 Feb 2022 04:16:25 -0500
+Subject: WRB: Introduce RHEL 9.0.0 hw compat structure
+
+General compatibility structure for post RHEL 9.0.0 rebase.
+
+Signed-off-by: Miroslav Rezanina <mrezanin@redhat.com>
+---
+ hw/core/machine.c          | 9 +++++++++
+ hw/i386/pc.c               | 6 ++++++
+ hw/i386/pc_piix.c          | 4 ++++
+ hw/i386/pc_q35.c           | 4 ++++
+ hw/s390x/s390-virtio-ccw.c | 2 ++
+ include/hw/boards.h        | 3 +++
+ include/hw/i386/pc.h       | 3 +++
+ 7 files changed, 31 insertions(+)
+
+diff --git a/hw/core/machine.c b/hw/core/machine.c
+index 28989b6e7b..dffc3ef4ab 100644
+--- a/hw/core/machine.c
++++ b/hw/core/machine.c
+@@ -53,6 +53,15 @@ GlobalProperty hw_compat_rhel_8_6[] = {
+ };
+ const size_t hw_compat_rhel_8_6_len = G_N_ELEMENTS(hw_compat_rhel_8_6);
+ 
++/*
++ * Mostly the same as hw_compat_6_2
++ */
++GlobalProperty hw_compat_rhel_9_0[] = {
++    /* hw_compat_rhel_9_0 from hw_compat_6_2 */
++    { "PIIX4_PM", "x-not-migrate-acpi-index", "on"},
++};
++const size_t hw_compat_rhel_9_0_len = G_N_ELEMENTS(hw_compat_rhel_9_0);
++
+ /*
+  * Mostly the same as hw_compat_6_0 and hw_compat_6_1
+  */
+diff --git a/hw/i386/pc.c b/hw/i386/pc.c
+index 263d882af6..0886cfe3fe 100644
+--- a/hw/i386/pc.c
++++ b/hw/i386/pc.c
+@@ -391,6 +391,12 @@ GlobalProperty pc_rhel_compat[] = {
+ };
+ const size_t pc_rhel_compat_len = G_N_ELEMENTS(pc_rhel_compat);
+ 
++GlobalProperty pc_rhel_9_0_compat[] = {
++    /* pc_rhel_9_0_compat from pc_compat_6_2 */
++    { "virtio-mem", "unplugged-inaccessible", "off" },
++};
++const size_t pc_rhel_9_0_compat_len = G_N_ELEMENTS(pc_rhel_9_0_compat);
++
+ GlobalProperty pc_rhel_8_5_compat[] = {
+     /* pc_rhel_8_5_compat from pc_compat_6_0 */
+     { "qemu64" "-" TYPE_X86_CPU, "family", "6" },
+diff --git a/hw/i386/pc_piix.c b/hw/i386/pc_piix.c
+index 0cacc0d623..dc987fe93b 100644
+--- a/hw/i386/pc_piix.c
++++ b/hw/i386/pc_piix.c
+@@ -1014,6 +1014,10 @@ static void pc_machine_rhel760_options(MachineClass *m)
+     pcmc->kvmclock_create_always = false;
+     /* From pc_i440fx_5_1_machine_options() */
+     pcmc->pci_root_uid = 1;
++    compat_props_add(m->compat_props, hw_compat_rhel_9_0,
++                     hw_compat_rhel_9_0_len);
++    compat_props_add(m->compat_props, pc_rhel_9_0_compat,
++                     pc_rhel_9_0_compat_len);
+     compat_props_add(m->compat_props, hw_compat_rhel_8_6,
+                      hw_compat_rhel_8_6_len);
+     compat_props_add(m->compat_props, hw_compat_rhel_8_5,
+diff --git a/hw/i386/pc_q35.c b/hw/i386/pc_q35.c
+index 157160e069..52c253c570 100644
+--- a/hw/i386/pc_q35.c
++++ b/hw/i386/pc_q35.c
+@@ -669,6 +669,10 @@ static void pc_q35_machine_rhel900_options(MachineClass *m)
+     m->desc = "RHEL-9.0.0 PC (Q35 + ICH9, 2009)";
+     pcmc->smbios_stream_product = "RHEL";
+     pcmc->smbios_stream_version = "9.0.0";
++    compat_props_add(m->compat_props, hw_compat_rhel_9_0,
++                     hw_compat_rhel_9_0_len);
++    compat_props_add(m->compat_props, pc_rhel_9_0_compat,
++                     pc_rhel_9_0_compat_len);
+ }
+ 
+ DEFINE_PC_MACHINE(q35_rhel900, "pc-q35-rhel9.0.0", pc_q35_init_rhel900,
+diff --git a/hw/s390x/s390-virtio-ccw.c b/hw/s390x/s390-virtio-ccw.c
+index 465a2a09d2..08e0f6a79b 100644
+--- a/hw/s390x/s390-virtio-ccw.c
++++ b/hw/s390x/s390-virtio-ccw.c
+@@ -1118,12 +1118,14 @@ static void ccw_machine_2_4_class_options(MachineClass *mc)
+ DEFINE_CCW_MACHINE(2_4, "2.4", false);
+ #endif
+ 
++
+ static void ccw_machine_rhel900_instance_options(MachineState *machine)
+ {
+ }
+ 
+ static void ccw_machine_rhel900_class_options(MachineClass *mc)
+ {
++    compat_props_add(mc->compat_props, hw_compat_rhel_9_0, hw_compat_rhel_9_0_len);
+ }
+ DEFINE_CCW_MACHINE(rhel900, "rhel9.0.0", true);
+ 
+diff --git a/include/hw/boards.h b/include/hw/boards.h
+index d1555665df..635e45dd71 100644
+--- a/include/hw/boards.h
++++ b/include/hw/boards.h
+@@ -451,6 +451,9 @@ extern const size_t hw_compat_2_2_len;
+ extern GlobalProperty hw_compat_2_1[];
+ extern const size_t hw_compat_2_1_len;
+ 
++extern GlobalProperty hw_compat_rhel_9_0[];
++extern const size_t hw_compat_rhel_9_0_len;
++
+ extern GlobalProperty hw_compat_rhel_8_6[];
+ extern const size_t hw_compat_rhel_8_6_len;
+ 
+diff --git a/include/hw/i386/pc.h b/include/hw/i386/pc.h
+index 419a6ec24b..a492c420b5 100644
+--- a/include/hw/i386/pc.h
++++ b/include/hw/i386/pc.h
+@@ -292,6 +292,9 @@ extern const size_t pc_compat_1_4_len;
+ extern GlobalProperty pc_rhel_compat[];
+ extern const size_t pc_rhel_compat_len;
+ 
++extern GlobalProperty pc_rhel_9_0_compat[];
++extern const size_t pc_rhel_9_0_compat_len;
++
+ extern GlobalProperty pc_rhel_8_5_compat[];
+ extern const size_t pc_rhel_8_5_compat_len;
+ 
+-- 
+2.31.1
+

@@ -1,0 +1,380 @@
+From f61b3d7dc000886e23943457ee9baf1d4cae43b4 Mon Sep 17 00:00:00 2001
+From: Miroslav Rezanina <mrezanin@redhat.com>
+Date: Fri, 19 Oct 2018 13:27:13 +0200
+Subject: Add ppc64 machine types
+
+Adding changes to add RHEL machine types for ppc64 architecture.
+
+Signed-off-by: Miroslav Rezanina <mrezanin@redhat.com>
+
+Rebase notes (6.2.0):
+- Fixed rebase conflict relicts
+- Update machine type compat for 6.2 (from MR 66)
+
+Merged patches (6.1.0):
+- c438c25ac3 redhat: Define pseries-rhel8.5.0 machine type
+- a3995e2eff Remove RHEL 7.0.0 machine type (only ppc64 changes)
+- ad3190a79b Remove RHEL 7.1.0 machine type (only ppc64 changes)
+- 84bbe15d4e Remove RHEL 7.2.0 machine type (only ppc64 changes)
+- 0215eb3356 Remove RHEL 7.3.0 machine types (only ppc64 changes)
+- af69d1ca6e Remove RHEL 7.4.0 machine types (only ppc64 changes)
+- 8f7a74ab78 Remove RHEL 7.5.0 machine types (only ppc64 changes)
+---
+ hw/ppc/spapr.c          | 243 ++++++++++++++++++++++++++++++++++++++++
+ hw/ppc/spapr_cpu_core.c |  13 +++
+ include/hw/ppc/spapr.h  |   4 +
+ target/ppc/compat.c     |  13 ++-
+ target/ppc/cpu.h        |   1 +
+ target/ppc/kvm.c        |  27 +++++
+ target/ppc/kvm_ppc.h    |  13 +++
+ 7 files changed, 313 insertions(+), 1 deletion(-)
+
+diff --git a/hw/ppc/spapr.c b/hw/ppc/spapr.c
+index a4372ba189..5fdf8b506d 100644
+--- a/hw/ppc/spapr.c
++++ b/hw/ppc/spapr.c
+@@ -4652,6 +4675,7 @@ static void spapr_machine_class_init(ObjectClass *oc, void *data)
+     vmc->client_architecture_support = spapr_vof_client_architecture_support;
+     vmc->quiesce = spapr_vof_quiesce;
+     vmc->setprop = spapr_vof_setprop;
++    smc->has_power9_support = true;
+ }
+ 
+ static const TypeInfo spapr_machine_info = {
+@@ -4703,6 +4727,7 @@ static void spapr_machine_latest_class_options(MachineClass *mc)
+     }                                                                \
+     type_init(spapr_machine_register_##suffix)
+ 
++#if 0 /* Disabled for Red Hat Enterprise Linux */
+ /*
+  * pseries-7.0
+  */
+@@ -4830,6 +4855,7 @@ static void spapr_machine_4_1_class_options(MachineClass *mc)
+ }
+ 
+ DEFINE_SPAPR_MACHINE(4_1, "4.1", false);
++#endif
+ 
+ /*
+  * pseries-4.0
+@@ -4849,6 +4875,8 @@ static bool phb_placement_4_0(SpaprMachineState *spapr, uint32_t index,
+     *nv2atsd = 0;
+     return true;
+ }
++
++#if 0 /* Disabled for Red Hat Enterprise Linux */
+ static void spapr_machine_4_0_class_options(MachineClass *mc)
+ {
+     SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
+@@ -5176,6 +5204,221 @@ static void spapr_machine_2_1_class_options(MachineClass *mc)
+     compat_props_add(mc->compat_props, hw_compat_2_1, hw_compat_2_1_len);
+ }
+ DEFINE_SPAPR_MACHINE(2_1, "2.1", false);
++#endif
++
++static void spapr_machine_rhel_default_class_options(MachineClass *mc)
++{
++    /*
++     * Defaults for the latest behaviour inherited from the base class
++     * can be overriden here for all pseries-rhel* machines.
++     */
++
++    /* Maximum supported VCPU count */
++    mc->max_cpus = 384;
++}
++
++/*
++ * pseries-rhel8.5.0
++ * like pseries-6.0
++ */
++
++static void spapr_machine_rhel850_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++
++    /* The default machine type must apply the RHEL specific defaults */
++    spapr_machine_rhel_default_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_5,
++                     hw_compat_rhel_8_5_len);
++    smc->pre_6_2_numa_affinity = true;
++    mc->smp_props.prefer_sockets = true;
++}
++
++DEFINE_SPAPR_MACHINE(rhel850, "rhel8.5.0", true);
++
++/*
++ * pseries-rhel8.4.0
++ * like pseries-5.2
++ */
++
++static void spapr_machine_rhel840_class_options(MachineClass *mc)
++{
++    spapr_machine_rhel850_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_4,
++                     hw_compat_rhel_8_4_len);
++}
++
++DEFINE_SPAPR_MACHINE(rhel840, "rhel8.4.0", false);
++
++/*
++ * pseries-rhel8.3.0
++ * like pseries-5.1
++ */
++
++static void spapr_machine_rhel830_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++
++    spapr_machine_rhel840_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_3,
++                     hw_compat_rhel_8_3_len);
++
++    /* from pseries-5.1 */
++    smc->pre_5_2_numa_associativity = true;
++}
++
++DEFINE_SPAPR_MACHINE(rhel830, "rhel8.3.0", false);
++
++/*
++ * pseries-rhel8.2.0
++ * like pseries-4.2 + pseries-5.0
++ * except SPAPR_CAP_CCF_ASSIST that has been backported to pseries-rhel8.1.0
++ */
++
++static void spapr_machine_rhel820_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++    /* from pseries-5.0 */
++    static GlobalProperty compat[] = {
++        { TYPE_SPAPR_PCI_HOST_BRIDGE, "pre-5.1-associativity", "on" },
++    };
++
++    spapr_machine_rhel830_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_2,
++                     hw_compat_rhel_8_2_len);
++    compat_props_add(mc->compat_props, compat, G_N_ELEMENTS(compat));
++
++    /* from pseries-4.2 */
++    smc->default_caps.caps[SPAPR_CAP_FWNMI] = SPAPR_CAP_OFF;
++    smc->rma_limit = 16 * GiB;
++    mc->nvdimm_supported = false;
++
++    /* from pseries-5.0 */
++    mc->numa_mem_supported = true;
++    smc->pre_5_1_assoc_refpoints = true;
++}
++
++DEFINE_SPAPR_MACHINE(rhel820, "rhel8.2.0", false);
++
++/*
++ * pseries-rhel8.1.0
++ * like pseries-4.1
++ */
++
++static void spapr_machine_rhel810_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++    static GlobalProperty compat[] = {
++        /* Only allow 4kiB and 64kiB IOMMU pagesizes */
++        { TYPE_SPAPR_PCI_HOST_BRIDGE, "pgsz", "0x11000" },
++    };
++
++    spapr_machine_rhel820_class_options(mc);
++
++    /* from pseries-4.1 */
++    smc->linux_pci_probe = false;
++    smc->smp_threads_vsmt = false;
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_1,
++                     hw_compat_rhel_8_1_len);
++    compat_props_add(mc->compat_props, compat, G_N_ELEMENTS(compat));
++
++    /* from pseries-4.2 */
++    smc->default_caps.caps[SPAPR_CAP_CCF_ASSIST] = SPAPR_CAP_OFF;
++}
++
++DEFINE_SPAPR_MACHINE(rhel810, "rhel8.1.0", false);
++
++/*
++ * pseries-rhel8.0.0
++ * like pseries-3.1 and pseries-4.0
++ * except SPAPR_CAP_CFPC, SPAPR_CAP_SBBC and SPAPR_CAP_IBS
++ * that have been backported to pseries-rhel8.0.0
++ */
++
++static void spapr_machine_rhel800_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++
++    spapr_machine_rhel810_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_8_0,
++                     hw_compat_rhel_8_0_len);
++
++    /* pseries-4.0 */
++    smc->phb_placement = phb_placement_4_0;
++    smc->irq = &spapr_irq_xics;
++    smc->pre_4_1_migration = true;
++
++    /* pseries-3.1 */
++    mc->default_cpu_type = POWERPC_CPU_TYPE_NAME("power8_v2.0");
++    smc->update_dt_enabled = false;
++    smc->dr_phb_enabled = false;
++    smc->broken_host_serial_model = true;
++    smc->default_caps.caps[SPAPR_CAP_LARGE_DECREMENTER] = SPAPR_CAP_OFF;
++}
++
++DEFINE_SPAPR_MACHINE(rhel800, "rhel8.0.0", false);
++
++/*
++ * pseries-rhel7.6.0
++ * like spapr_compat_2_12 and spapr_compat_3_0
++ * spapr_compat_0 is empty
++ */
++GlobalProperty spapr_compat_rhel7_6[] = {
++    { TYPE_POWERPC_CPU, "pre-3.0-migration", "on" },
++    { TYPE_SPAPR_CPU_CORE, "pre-3.0-migration", "on" },
++};
++const size_t spapr_compat_rhel7_6_len = G_N_ELEMENTS(spapr_compat_rhel7_6);
++
++
++static void spapr_machine_rhel760_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++
++    spapr_machine_rhel800_class_options(mc);
++    compat_props_add(mc->compat_props, hw_compat_rhel_7_6, hw_compat_rhel_7_6_len);
++    compat_props_add(mc->compat_props, spapr_compat_rhel7_6, spapr_compat_rhel7_6_len);
++
++    /* from spapr_machine_3_0_class_options() */
++    smc->legacy_irq_allocation = true;
++    smc->nr_xirqs = 0x400;
++    smc->irq = &spapr_irq_xics_legacy;
++
++    /* from spapr_machine_2_12_class_options() */
++    /* We depend on kvm_enabled() to choose a default value for the
++     * hpt-max-page-size capability. Of course we can't do it here
++     * because this is too early and the HW accelerator isn't initialzed
++     * yet. Postpone this to machine init (see default_caps_with_cpu()).
++     */
++    smc->default_caps.caps[SPAPR_CAP_HPT_MAXPAGESIZE] = 0;
++
++    /* SPAPR_CAP_WORKAROUND enabled in pseries-rhel800 by
++     * f21757edc554
++     * "Enable mitigations by default for pseries-4.0 machine type")
++     */
++    smc->default_caps.caps[SPAPR_CAP_CFPC] = SPAPR_CAP_BROKEN;
++    smc->default_caps.caps[SPAPR_CAP_SBBC] = SPAPR_CAP_BROKEN;
++    smc->default_caps.caps[SPAPR_CAP_IBS] = SPAPR_CAP_BROKEN;
++}
++
++DEFINE_SPAPR_MACHINE(rhel760, "rhel7.6.0", false);
++
++/*
++ * pseries-rhel7.6.0-sxxm
++ *
++ * pseries-rhel7.6.0 with speculative execution exploit mitigations enabled by default
++ */
++
++static void spapr_machine_rhel760sxxm_class_options(MachineClass *mc)
++{
++    SpaprMachineClass *smc = SPAPR_MACHINE_CLASS(mc);
++
++    spapr_machine_rhel760_class_options(mc);
++    smc->default_caps.caps[SPAPR_CAP_CFPC] = SPAPR_CAP_WORKAROUND;
++    smc->default_caps.caps[SPAPR_CAP_SBBC] = SPAPR_CAP_WORKAROUND;
++    smc->default_caps.caps[SPAPR_CAP_IBS] = SPAPR_CAP_FIXED_CCD;
++}
++
++DEFINE_SPAPR_MACHINE(rhel760sxxm, "rhel7.6.0-sxxm", false);
+ 
+ static void spapr_machine_register_types(void)
+ {
+diff --git a/hw/ppc/spapr_cpu_core.c b/hw/ppc/spapr_cpu_core.c
+index fcb5dfe792..ab8fb5bf62 100644
+--- a/hw/ppc/spapr_cpu_core.c
++++ b/hw/ppc/spapr_cpu_core.c
+@@ -25,6 +25,7 @@
+ #include "sysemu/reset.h"
+ #include "sysemu/hw_accel.h"
+ #include "qemu/error-report.h"
++#include "cpu-models.h"
+ 
+ static void spapr_reset_vcpu(PowerPCCPU *cpu)
+ {
+@@ -259,6 +260,7 @@ static bool spapr_realize_vcpu(PowerPCCPU *cpu, SpaprMachineState *spapr,
+ {
+     CPUPPCState *env = &cpu->env;
+     CPUState *cs = CPU(cpu);
++    SpaprMachineClass *smc = SPAPR_MACHINE_GET_CLASS(spapr);
+ 
+     if (!qdev_realize(DEVICE(cpu), NULL, errp)) {
+         return false;
+@@ -270,6 +272,17 @@ static bool spapr_realize_vcpu(PowerPCCPU *cpu, SpaprMachineState *spapr,
+     /* Set time-base frequency to 512 MHz. vhyp must be set first. */
+     cpu_ppc_tb_init(env, SPAPR_TIMEBASE_FREQ);
+ 
++    if (!smc->has_power9_support &&
++        (((spapr->max_compat_pvr &&
++           ppc_compat_cmp(spapr->max_compat_pvr,
++                          CPU_POWERPC_LOGICAL_3_00) >= 0)) ||
++          (!spapr->max_compat_pvr &&
++           ppc_check_compat(cpu, CPU_POWERPC_LOGICAL_3_00, 0, 0)))) {
++        error_set(errp, ERROR_CLASS_DEVICE_NOT_FOUND,
++                  "POWER9 CPU is not supported by this machine class");
++        return false;
++    }
++
+     if (spapr_irq_cpu_intc_create(spapr, cpu, errp) < 0) {
+         qdev_unrealize(DEVICE(cpu));
+         return false;
+diff --git a/include/hw/ppc/spapr.h b/include/hw/ppc/spapr.h
+index f5c33dcc86..4a68e0a901 100644
+--- a/include/hw/ppc/spapr.h
++++ b/include/hw/ppc/spapr.h
+@@ -154,6 +154,7 @@ struct SpaprMachineClass {
+     bool pre_5_2_numa_associativity;
+     bool pre_6_2_numa_affinity;
+ 
++    bool has_power9_support;
+     bool (*phb_placement)(SpaprMachineState *spapr, uint32_t index,
+                           uint64_t *buid, hwaddr *pio,
+                           hwaddr *mmio32, hwaddr *mmio64,
+diff --git a/target/ppc/compat.c b/target/ppc/compat.c
+index 7949a24f5a..f207a9ba01 100644
+--- a/target/ppc/compat.c
++++ b/target/ppc/compat.c
+@@ -114,8 +114,19 @@ static const CompatInfo *compat_by_pvr(uint32_t pvr)
+     return NULL;
+ }
+ 
++long ppc_compat_cmp(uint32_t pvr1, uint32_t pvr2)
++{
++    const CompatInfo *compat1 = compat_by_pvr(pvr1);
++    const CompatInfo *compat2 = compat_by_pvr(pvr2);
++
++    g_assert(compat1);
++    g_assert(compat2);
++
++    return compat1 - compat2;
++}
++
+ static bool pcc_compat(PowerPCCPUClass *pcc, uint32_t compat_pvr,
+-                       uint32_t min_compat_pvr, uint32_t max_compat_pvr)
++                      uint32_t min_compat_pvr, uint32_t max_compat_pvr)
+ {
+     const CompatInfo *compat = compat_by_pvr(compat_pvr);
+     const CompatInfo *min = compat_by_pvr(min_compat_pvr);
+diff --git a/target/ppc/cpu.h b/target/ppc/cpu.h
+index 047b24ba50..79c5ac50b9 100644
+--- a/target/ppc/cpu.h
++++ b/target/ppc/cpu.h
+@@ -1462,6 +1462,7 @@ static inline int cpu_mmu_index(CPUPPCState *env, bool ifetch)
+ 
+ /* Compatibility modes */
+ #if defined(TARGET_PPC64)
++long ppc_compat_cmp(uint32_t pvr1, uint32_t pvr2);
+ bool ppc_check_compat(PowerPCCPU *cpu, uint32_t compat_pvr,
+                       uint32_t min_compat_pvr, uint32_t max_compat_pvr);
+ bool ppc_type_check_compat(const char *cputype, uint32_t compat_pvr,
+-- 
+2.31.1
+

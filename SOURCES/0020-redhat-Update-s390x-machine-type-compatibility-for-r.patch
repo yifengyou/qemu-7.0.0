@@ -1,0 +1,38 @@
+From c8ad21ca31892f8798cf82508c2b2c61bf3b9895 Mon Sep 17 00:00:00 2001
+From: Thomas Huth <thuth@redhat.com>
+Date: Mon, 4 Apr 2022 12:15:50 +0200
+Subject: redhat: Update s390x machine type compatibility for rebase to QEMU
+ 7.0.0
+
+RH-Author: Thomas Huth <thuth@redhat.com>
+RH-MergeRequest: 143: Update machine type compatibility for QEMU 7.0.0 update [s390x]
+RH-Commit: [23/23] 0ecf97d7bdddc50565b5779c64744b353f715cbd
+RH-Bugzilla: 2064782
+RH-Acked-by: Cornelia Huck <cohuck@redhat.com>
+RH-Acked-by: David Hildenbrand <david@redhat.com>
+
+No s390x-specific machine class property updates required this time,
+only an update to the default qemu cpu model.
+
+Signed-off-by: Thomas Huth <thuth@redhat.com>
+---
+ hw/s390x/s390-virtio-ccw.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hw/s390x/s390-virtio-ccw.c b/hw/s390x/s390-virtio-ccw.c
+index 08e0f6a79b..4a491d4988 100644
+--- a/hw/s390x/s390-virtio-ccw.c
++++ b/hw/s390x/s390-virtio-ccw.c
+@@ -1121,6 +1121,9 @@ DEFINE_CCW_MACHINE(2_4, "2.4", false);
+ 
+ static void ccw_machine_rhel900_instance_options(MachineState *machine)
+ {
++    static const S390FeatInit qemu_cpu_feat = { S390_FEAT_LIST_QEMU_V6_2 };
++
++    s390_set_qemu_cpu_model(0x3906, 14, 2, qemu_cpu_feat);
+ }
+ 
+ static void ccw_machine_rhel900_class_options(MachineClass *mc)
+-- 
+2.31.1
+
