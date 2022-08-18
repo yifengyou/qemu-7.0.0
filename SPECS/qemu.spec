@@ -51,12 +51,7 @@
 %endif
 
 %global tools_only 0
-
 %global user_static 1
-%if 0%{?rhel}
-# EPEL/RHEL do not have required -static builddeps
-%global user_static 0
-%endif
 
 %global have_kvm 0
 %if 0%{?kvm_package:1}
@@ -302,7 +297,7 @@ Obsoletes: %{name}-system-unicore32-core <= %{epoch}:%{version}-%{release}
 %endif
 
 # To prevent rpmdev-bumpspec breakage
-%global baserelease 39
+%global baserelease 43
 
 Summary: QEMU is a FAST! processor emulator
 Name: qemu
@@ -327,23 +322,23 @@ Source36: README.tests
 
 Patch0001: 0001-sgx-stub-fix.patch
 Patch0004: 0004-Initial-redhat-build.patch
-#Patch0005: 0005-Enable-disable-devices-for-RHEL.patch
-#Patch0006: 0006-Machine-type-related-general-changes.patch
-#Patch0007: 0007-Add-aarch64-machine-types.patch
-#Patch0008: 0008-Add-ppc64-machine-types.patch
-#Patch0009: 0009-Add-s390x-machine-types.patch
-#Patch0010: 0010-Add-x86_64-machine-types.patch
-#Patch0011: 0011-Enable-make-check.patch
-#Patch0012: 0012-vfio-cap-number-of-devices-that-can-be-assigned.patch
-#Patch0013: 0013-Add-support-statement-to-help-output.patch
-#Patch0014: 0014-globally-limit-the-maximum-number-of-CPUs.patch
-#Patch0015: 0015-Use-qemu-kvm-in-documentation-instead-of-qemu-system.patch
-#Patch0016: 0016-virtio-scsi-Reject-scsi-cd-if-data-plane-enabled-RHE.patch
-#Patch0017: 0017-BZ1653590-Require-at-least-64kiB-pages-for-downstrea.patch
-#Patch0018: 0018-qcow2-Deprecation-warning-when-opening-v2-images-rw.patch
-#Patch0019: 0019-WRB-Introduce-RHEL-9.0.0-hw-compat-structure.patch
-#Patch0020: 0020-redhat-Update-s390x-machine-type-compatibility-for-r.patch
-#Patch0021: 0021-pc-Move-s3-s4-suspend-disabling-to-compat.patch
+Patch0005: 0005-Enable-disable-devices-for-RHEL.patch
+Patch0006: 0006-Machine-type-related-general-changes.patch
+Patch0007: 0007-Add-aarch64-machine-types.patch
+Patch0008: 0008-Add-ppc64-machine-types.patch
+Patch0009: 0009-Add-s390x-machine-types.patch
+Patch0010: 0010-Add-x86_64-machine-types.patch
+Patch0011: 0011-Enable-make-check.patch
+Patch0012: 0012-vfio-cap-number-of-devices-that-can-be-assigned.patch
+Patch0013: 0013-Add-support-statement-to-help-output.patch
+Patch0014: 0014-globally-limit-the-maximum-number-of-CPUs.patch
+Patch0015: 0015-Use-qemu-kvm-in-documentation-instead-of-qemu-system.patch
+Patch0016: 0016-virtio-scsi-Reject-scsi-cd-if-data-plane-enabled-RHE.patch
+Patch0017: 0017-BZ1653590-Require-at-least-64kiB-pages-for-downstrea.patch
+Patch0018: 0018-qcow2-Deprecation-warning-when-opening-v2-images-rw.patch
+Patch0019: 0019-WRB-Introduce-RHEL-9.0.0-hw-compat-structure.patch
+Patch0020: 0020-redhat-Update-s390x-machine-type-compatibility-for-r.patch
+Patch0021: 0021-pc-Move-s3-s4-suspend-disabling-to-compat.patch
 
 
 BuildRequires: meson >= %{meson_version}
